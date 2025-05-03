@@ -1,5 +1,7 @@
 library(zellkonverter)
 library(SingleCellExperiment)
+library(DropletUtils)
+library(scDblFinder)
 
 data_directory = '../data/Reyes2022/'
 
@@ -7,9 +9,6 @@ srr_runs_gfppos = read.table(paste0(data_directory, 'SRR_Acc_List_Old_GFPPos.txt
 srr_runs_gfpneg = read.table(paste0(data_directory, 'SRR_Acc_List_Old_GFPNeg.txt'))$V1
 
 srr_runs <- c(srr_runs_gfppos, srr_runs_gfpneg)
-
-sce.list <- list()
-genes.list <- list()
 
 for (i in 1:length(srr_runs)) {
   run <- srr_runs[i]
@@ -22,27 +21,14 @@ for (i in 1:length(srr_runs)) {
   }
   
   sce <- readH5AD(paste0(file_directory, "adata_filtered.h5ad"))
+  assay(sce, "counts") <- assay(sce, "mature") + assay(sce, "ambiguous") + assay(sce, "nascent")
   
-  sce.list[[i]] <- sce
-  genes.list[[i]] <- rownames(sce)
-
+  print(dim(sce))
+  sce <- scDblFinder(sce)
+  sce <- sce[, sce$scDblFinder.class != 'doublet']
+  print(dim(sce))
+  
+  writeH5AD(sce, paste0(file_directory, "adata_filtered.h5ad"), compression="gzip")
+  
 }
 
-genes.all <- Reduce(intersect, genes.list)
-print(length(genes.all))
-
-for (i in 1:length(sce.list))
-{
-  sce.list[[i]] <- sce.list[[i]][genes.all, ]
-  rowData(sce.list[[i]])[, 'scDblFinder.selected'] <- NULL
-  colData(sce.list[[i]])[, 'n_cells'] <- NULL
-  rowData(sce.list[[i]])[, 'n_cells'] <- NULL
-}
-
-sce.merged <- Reduce(SingleCellExperiment::cbind, sce.list)
-
-print(dim(sce.merged))
-assay(sce, "counts") <- NULL
-
-writeH5AD(sce.merged, X_name="X", paste0(data_directory, "reyes22_old_unspliced.h5ad"), compression="gzip")
-  

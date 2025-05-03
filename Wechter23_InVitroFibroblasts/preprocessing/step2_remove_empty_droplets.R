@@ -9,7 +9,7 @@ library(scuttle)
 
 data_directory = '../data/Wechter2023/'
 
-srr_runs = read.table(paste(data_directory, 'SRR_Acc_List_static.txt', sep=''))$V1
+srr_runs = read.table(paste0(data_directory, 'SRR_Acc_List_static.txt'))$V1
 
 knee_plot <- function(bc_rank) {
   knee_plt <- tibble(rank = bc_rank[["rank"]],
@@ -49,9 +49,9 @@ for (i in 1:length(srr_runs)) {
   run <- srr_runs[i]
   
   # Read in the file now
-  file_directory <- paste(data_directory, "out_", run, "_v3/counts_unfiltered/", sep="")
+  file_directory <- paste0(data_directory, "out_", run, "_v3/counts_unfiltered/")
   
-  sce <- readH5AD(paste(file_directory, "adata_filtered.h5ad", sep=""))
+  sce <- readH5AD(paste0(file_directory, "adata_filtered.h5ad"))
   
   counts <- assay(sce, "mature") + assay(sce, "ambiguous") # Use spliced counts for analysis
   
@@ -59,7 +59,7 @@ for (i in 1:length(srr_runs)) {
 
   options(repr.plot.width=5, repr.plot.height=4)
   knee_plot(bc_rank)
-  ggsave(paste(file_directory, "knee_plot_", run, ".pdf", sep=""), width = 4, height = 4)
+  ggsave(paste0(file_directory, "knee_plot_", run, ".pdf"), width = 4, height = 4)
   
   set.seed(100*i)
     e.out <- emptyDrops(counts)
@@ -72,7 +72,7 @@ for (i in 1:length(srr_runs)) {
   
   options(repr.plot.width=5, repr.plot.height=4)
   empty_drops_plot(e.out, fdr_threshold)
-  ggsave(paste(file_directory, "emptyDroplets_", run, ".pdf", sep=""), width = 4, height = 4)
+  ggsave(paste0(file_directory, "emptyDroplets_", run, ".pdf"), width = 4, height = 4)
   
   filtered.counts <- counts[,which(is.cell)]
   cells <- calculateAverage(filtered.counts)
@@ -81,14 +81,14 @@ for (i in 1:length(srr_runs)) {
   
   options(repr.plot.width=5, repr.plot.height=4)
   res <- maPlot(ambient, cells, normalize = TRUE)
-  dev.copy(pdf, paste(file_directory, "MAplot_", run, ".pdf", sep=""), width = 4, height = 4)
+  dev.copy(pdf, paste0(file_directory, "MAplot_", run, ".pdf"), width = 4, height = 4)
   dev.off()
 
   sce <- sce[, which(is.cell)]
 
   print(dim(sce))
   
-  writeH5AD(sce, paste(file_directory, "adata_filtered.h5ad", sep=""), compression="gzip")
+  writeH5AD(sce, paste0(file_directory, "adata_filtered.h5ad"), compression="gzip")
   
 }
 
